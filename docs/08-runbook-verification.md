@@ -89,3 +89,6 @@ openssl x509 -in /etc/logstash/certs/logstash01.crt -noout -text | grep -A2 "Sub
 | Logstash가 이벤트를 못 받음 | LB 백엔드 헬스체크 실패, 보안그룹 5044 차단 | [01-prerequisites.md](01-prerequisites.md) 4절, LB 콘솔 |
 | Logstash → ES 색인 실패 (403) | API 키 권한 부족 | [03-elasticsearch.md](03-elasticsearch.md) 4.3절 role 정의 재확인 |
 | Kibana 로그인 후 Fleet 메뉴에서 오류 | `xpack.fleet.enabled` 누락 또는 `elastic/kibana` 토큰 오류 | `configs/kibana/kibana.yml`, kibana 로그 |
+| Kibana 로그에 `security_exception: missing authentication credentials` | keystore에 `elasticsearch.serviceAccountToken`이 비어있음 | `kibana-keystore list`로 항목 존재 확인, 없으면 재발급 후 추가 |
+| Kibana 로그에 `failed to authenticate service account [elastic/kibana] with token name [...]` | Elastic01의 `/etc/elasticsearch/service_tokens` 파일을 ES 프로세스가 못 읽음(소유권 문제) | `ls -la /etc/elasticsearch/service_tokens` → `chown root:elasticsearch`, `chmod 660` 후 재확인 |
+| Fleet 초기화 오류 `Agent binary source needs encrypted saved object api key to be set` | `xpack.encryptedSavedObjects.encryptionKey` 미설정 | `scripts/03-install-kibana.sh`가 자동 생성(최신 버전 기준); 수동이면 `kibana-encryption-keys generate` 후 keystore/kibana.yml에 추가 |

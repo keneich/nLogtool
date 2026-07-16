@@ -52,6 +52,14 @@ sudo /usr/share/elasticsearch/bin/elasticsearch-service-tokens create elastic/fl
 # 출력되는 토큰 값을 FleetKibana 노드의 elastic-agent(Fleet Server) 설치 시 사용 (04-kibana-fleet-server.md)
 ```
 
+> `elasticsearch-service-tokens create`가 처음 실행되면 `/etc/elasticsearch/service_tokens` 파일이 새로 생성된다. 이 파일을 `elasticsearch` 프로세스가 읽을 수 있어야 서비스 토큰 인증이 동작하므로, 소유권을 확인해둔다.
+> ```bash
+> ls -la /etc/elasticsearch/service_tokens
+> sudo chown root:elasticsearch /etc/elasticsearch/service_tokens
+> sudo chmod 660 /etc/elasticsearch/service_tokens
+> ```
+> 권한이 잘못되어 있으면 Kibana/Fleet Server 쪽에서 `failed to authenticate service account` 오류가 발생한다.
+
 ### 4.3 Logstash 출력 전용 역할 + API 키
 
 Logstash가 Elasticsearch에 데이터스트림(`logs-*-*`, `metrics-*-*`, `traces-*-*`) 문서를 쓸 수 있는 최소 권한 역할을 만들고, 이 역할로 API 키를 발급한다. Elastic Agent 통합(integration)이 이미 인덱스 템플릿/데이터스트림을 생성하므로 Logstash에는 문서 생성 권한만 부여한다.

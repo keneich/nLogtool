@@ -12,6 +12,8 @@
 sudo REPO_DIR=/path/to/nLogtool ./scripts/03-install-kibana.sh
 ```
 
+실행 중 `elastic/kibana` 서비스 토큰 입력을 요구한다. 이후 Fleet 등이 사용하는 encrypted saved objects용 암호화 키(`xpack.encryptedSavedObjects.encryptionKey` 등 3종)를 자동으로 생성해 keystore에 저장한다 — 이 키가 없으면 Fleet Server 설치 단계에서 `Agent binary source needs encrypted saved object api key to be set` 오류가 발생한다.
+
 기동 후 `https://10.9.88.61:5601` (또는 `https://139.150.84.70:5601`)로 접속해 `elastic` 슈퍼유저로 로그인한다.
 
 ## 3. Fleet Server 정책/출력 사전 구성 (Kibana Fleet UI)
