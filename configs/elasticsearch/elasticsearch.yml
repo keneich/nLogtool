@@ -1,0 +1,32 @@
+cluster.name: nlogtool
+node.name: elastic01
+node.roles: [ master, data, ingest ]
+
+network.host: 10.9.88.2
+http.port: 9200
+transport.port: 9300
+
+discovery.type: single-node
+
+path.data: /data/elasticsearch
+path.logs: /var/log/elasticsearch
+
+# 자체 서명 CA(docs/02-certificates.md)로 통일하기 위해 보안 자동구성을 비활성화하고
+# 아래 TLS 설정을 직접 지정한다. 반드시 최초 서비스 기동 전에 적용되어야 한다.
+xpack.security.enabled: true
+xpack.security.autoconfiguration.enabled: false
+
+xpack.security.http.ssl:
+  enabled: true
+  certificate: /etc/elasticsearch/certs/elastic01.crt
+  key: /etc/elasticsearch/certs/elastic01.key
+  certificate_authorities: [ "/etc/elasticsearch/certs/ca.crt" ]
+
+xpack.security.transport.ssl:
+  enabled: true
+  verification_mode: certificate
+  certificate: /etc/elasticsearch/certs/elastic01.crt
+  key: /etc/elasticsearch/certs/elastic01.key
+  certificate_authorities: [ "/etc/elasticsearch/certs/ca.crt" ]
+
+action.destructive_requires_name: true

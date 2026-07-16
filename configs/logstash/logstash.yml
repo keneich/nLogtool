@@ -1,0 +1,22 @@
+# 이 파일은 logstash01(10.9.88.4) 기준 템플릿이다.
+# logstash02에 배포할 때는 node.name과 api.http.host를 logstash02 / 10.9.88.9로 바꾼다.
+# (scripts/05-install-logstash.sh 가 NODE_NAME/NODE_IP 인자로 자동 치환한다)
+node.name: logstash01
+
+path.data: /var/lib/logstash
+path.logs: /var/log/logstash
+
+pipeline.workers: 4
+pipeline.batch.size: 125
+
+# 영속 큐(Persistent Queue) - 두 번째 디스크에 마운트한 /data/logstash 사용
+queue.type: persisted
+path.queue: /data/logstash/queue
+queue.max_bytes: 20gb
+
+dead_letter_queue.enable: true
+path.dead_letter_queue: /data/logstash/dead_letter_queue
+
+# 모니터링 API - 접근 통제는 방화벽/보안그룹으로 수행 (01-prerequisites.md 4절)
+api.http.host: 10.9.88.4
+api.http.port: 9600

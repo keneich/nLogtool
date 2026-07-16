@@ -1,0 +1,39 @@
+# elasticsearch-certutil 입력 파일
+# 사용: elasticsearch-certutil cert --pem --ca-cert ca/ca.crt --ca-key ca/ca.key --in instances.yml --out certs-bundle.zip
+#
+# fleet-kibana에는 NAT IP(139.150.84.70)를 SAN에 포함한다 — 외부(랜덤 공인 IP) Elastic Agent가
+# Fleet Server enrollment/checkin 시 이 NAT 주소로 직접 접속하기 때문이다.
+#
+# logstash01/02에는 내부 LB(10.9.88.40)와 외부 LB(139.150.86.188) IP를 함께 SAN에 포함한다 — LB가
+# TCP 패스스루이므로 Elastic Agent가 실제로 검증하는 인증서는 Logstash 자신의 인증서이고,
+# 에이전트 출력 설정의 접속 대상(LB IP)과 인증서 SAN이 일치해야 하기 때문이다.
+
+instances:
+  - name: "elastic01"
+    dns:
+      - "elastic01"
+    ip:
+      - "10.9.88.2"
+
+  - name: "fleet-kibana"
+    dns:
+      - "fleet-kibana"
+    ip:
+      - "10.9.88.61"
+      - "139.150.84.70"
+
+  - name: "logstash01"
+    dns:
+      - "logstash01"
+    ip:
+      - "10.9.88.4"
+      - "10.9.88.40"
+      - "139.150.86.188"
+
+  - name: "logstash02"
+    dns:
+      - "logstash02"
+    ip:
+      - "10.9.88.9"
+      - "10.9.88.40"
+      - "139.150.86.188"

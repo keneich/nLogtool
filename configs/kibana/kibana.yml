@@ -1,0 +1,18 @@
+server.host: "10.9.88.61"
+server.port: 5601
+# 관리자가 NAT IP로 접근할 경우를 대비한 공개 URL. 내부에서만 접근한다면 이 줄은 삭제해도 무방.
+server.publicBaseUrl: "https://139.150.84.70:5601"
+
+server.ssl.enabled: true
+server.ssl.certificate: /etc/kibana/certs/fleet-kibana.crt
+server.ssl.key: /etc/kibana/certs/fleet-kibana.key
+
+elasticsearch.hosts: ["https://elastic01:9200"]
+elasticsearch.ssl.certificateAuthorities: ["/etc/kibana/certs/ca.crt"]
+# elasticsearch.serviceAccountToken 값은 이 파일에 두지 않고 kibana-keystore에 저장한다
+# (scripts/03-install-kibana.sh 참고, docs/03-elasticsearch.md 4.1절에서 토큰 발급).
+
+xpack.fleet.enabled: true
+
+# Fleet 출력(Output)/에이전트 정책/Fleet Server host 등록은 이 파일에 선언하지 않고
+# Kibana Fleet UI(또는 부록의 Fleet API curl 예시)로 관리한다 — docs/04-kibana-fleet-server.md 참고.
