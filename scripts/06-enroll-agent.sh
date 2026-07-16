@@ -30,11 +30,17 @@ if [ ! -f "$CA_CERT_PATH" ]; then
   exit 1
 fi
 
+case "$(uname -m)" in
+  x86_64)          PKG_ARCH=x86_64 ;;
+  aarch64|arm64)   PKG_ARCH=arm64 ;;
+  *) echo "지원하지 않는 아키텍처: $(uname -m)" >&2; exit 1 ;;
+esac
+
 WORK_DIR=$(mktemp -d)
 cd "$WORK_DIR"
-curl -L -O "https://artifacts.elastic.co/downloads/beats/elastic-agent/elastic-agent-${AGENT_VERSION}-linux-x86_64.tar.gz"
-tar xzf "elastic-agent-${AGENT_VERSION}-linux-x86_64.tar.gz"
-cd "elastic-agent-${AGENT_VERSION}-linux-x86_64"
+curl -L -O "https://artifacts.elastic.co/downloads/beats/elastic-agent/elastic-agent-${AGENT_VERSION}-linux-${PKG_ARCH}.tar.gz"
+tar xzf "elastic-agent-${AGENT_VERSION}-linux-${PKG_ARCH}.tar.gz"
+cd "elastic-agent-${AGENT_VERSION}-linux-${PKG_ARCH}"
 
 ./elastic-agent install \
   --url="${FLEET_URL}" \

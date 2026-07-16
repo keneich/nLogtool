@@ -20,11 +20,17 @@ FLEET_SERVER_POLICY_ID="${FLEET_SERVER_POLICY_ID:?Kibana Fleet > Agent policies 
 FLEET_SERVICE_TOKEN="${FLEET_SERVICE_TOKEN:?docs/03-elasticsearch.md 4.2절에서 발급한 서비스 토큰을 지정하세요}"
 CERT_DIR="${CERT_DIR:-/etc/fleet-server/certs}"
 
+case "$(uname -m)" in
+  x86_64)          PKG_ARCH=x86_64 ;;
+  aarch64|arm64)   PKG_ARCH=arm64 ;;
+  *) echo "지원하지 않는 아키텍처: $(uname -m)" >&2; exit 1 ;;
+esac
+
 WORK_DIR=$(mktemp -d)
 cd "$WORK_DIR"
-curl -L -O "https://artifacts.elastic.co/downloads/beats/elastic-agent/elastic-agent-${AGENT_VERSION}-linux-x86_64.tar.gz"
-tar xzf "elastic-agent-${AGENT_VERSION}-linux-x86_64.tar.gz"
-cd "elastic-agent-${AGENT_VERSION}-linux-x86_64"
+curl -L -O "https://artifacts.elastic.co/downloads/beats/elastic-agent/elastic-agent-${AGENT_VERSION}-linux-${PKG_ARCH}.tar.gz"
+tar xzf "elastic-agent-${AGENT_VERSION}-linux-${PKG_ARCH}.tar.gz"
+cd "elastic-agent-${AGENT_VERSION}-linux-${PKG_ARCH}"
 
 # --install-servers: 9.0+ 에서 --fleet-server-* 옵션 사용 시 명시적으로 필요
 # (없으면 "timed out waiting for Fleet Server to start" 오류로 실패할 수 있음).
