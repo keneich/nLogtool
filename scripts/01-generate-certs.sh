@@ -12,7 +12,11 @@ INSTANCES_YML="${1:?instances.yml 경로를 지정하세요}"
 OUT_DIR="${2:-/root/certs}"
 CERTUTIL=/usr/share/elasticsearch/bin/elasticsearch-certutil
 
+# elasticsearch-certutil은 내부적으로 ES_HOME(/usr/share/elasticsearch)으로 cd한 뒤 파일을 열기 때문에
+# 상대경로를 넘기면 엉뚱한 위치에서 파일을 찾는다. 절대경로로 변환해서 넘긴다.
+INSTANCES_YML="$(readlink -f "$INSTANCES_YML")"
 mkdir -p "$OUT_DIR"
+OUT_DIR="$(readlink -f "$OUT_DIR")"
 cd "$OUT_DIR"
 
 echo "== CA 생성 (PEM) =="
