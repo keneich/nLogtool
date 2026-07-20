@@ -10,7 +10,7 @@ Kibana 로그인 완료 시점까지 각 서버별로 실제 진행한 작업을
 | FleetKibana (10.9.88.61) | 완료 | 완료 | 완료 (Kibana + Fleet Server) | 완료 | |
 | Logstash01 (10.9.88.4) | 완료 | 완료 | 완료 | 완료 | |
 | Logstash02 (10.9.88.9) | 완료 | 완료 | 완료 | 완료 | |
-| 수집 대상 에이전트 | - | - | 진행 중 (1대 완료: 10.9.88.12) | - | 나머지 대상 서버는 동일 절차 반복 |
+| 수집 대상 에이전트 | - | - | 진행 중 (3대 완료: 10.9.88.12, 114.108.154.59, 114.108.154.60) | - | 나머지 대상 서버는 동일 절차 반복 |
 
 **라이선스**: Basic → 2026-07-20 Trial(Platinum 상당) 시작. 정책별 출력(Output for integrations/monitoring) 커스터마이징이 Basic에서 막혀있어 트라이얼로 전환. **구매 계획 없음 — 2026-08-19(30일 후) 만료 전 단일 출력 구조로 전환할지 재검토 필요.**
 
@@ -133,9 +133,15 @@ sudo FLEET_URL=https://10.9.88.61:8220 \
 - **겪은 이슈**: enroll 직후 모니터링 컴포넌트가 `lookup elastic01 on 10.9.88.8:53: no such host`로 실패. 핵심 인프라 4개 노드와 달리 수집 대상 서버는 `/etc/hosts`에 `elastic01`이 없어 DNS 해석 실패 — 앞으로 늘어날 모든 수집 대상 서버마다 `/etc/hosts`를 추가하는 건 비현실적이므로, **Fleet의 `default` 출력 Hosts 값을 `https://elastic01:9200`에서 `https://10.9.88.2:9200`(IP)으로 변경**해서 근본 해결 (`elastic01` 인증서 SAN에 IP `10.9.88.2`도 포함되어 있어 TLS 검증 문제 없음, `configs/elasticsearch/instances.yml` 확인).
 - 위 이슈 + 6절의 Client SSL 이슈 수정 후 `elastic-agent status` 전체 `HEALTHY` 확인 완료.
 
+### 외부 서버 2대 추가 (114.108.154.59 Ubuntu 22.04, 114.108.154.60 CentOS7)
+
+`External-Servers` 정책, `FLEET_URL=https://139.150.84.70:8220`(NAT)으로 동일 스크립트 진행. CentOS7은 EOL이라 우려했으나 tar.gz 바이너리 설치라 문제없이 enroll됨.
+
+- **겪은 이슈 — 외부 에이전트 모니터링 데이터 경로 없음**: `elastic-agent status`에서 `beat/metrics-monitoring` 등이 `Elasticsearch request failed: context deadline exceeded`로 계속 `DEGRADED`. 원인은 **에이전트 자체 모니터링(로그/메트릭)이 항상 `default` 출력(ES `10.9.88.2:9200`, 사설 IP)으로 가는데, 외부 에이전트는 사설 대역에 도달할 경로 자체가 없음** — Fleet Server(NAT 8220), Logstash(외부 LB 5044)와 달리 Elasticsearch는 NAT로 노출하지 않는 설계(`docs/02-certificates.md`)라서 구조적으로 해결 불가능한 경로. **Fleet → Agent policies → External-Servers → Settings → Agent monitoring(Collect agent logs/metrics) 토글을 끔**으로써 해결 — 에이전트 자기 자신에 대한 모니터링만 끄는 것이고, 실제 수집 로그 데이터(Logstash-External 경유)는 영향 없음. 정책 저장 후 대상 호스트에 반영되기까지 1~2분 정도 걸림.
+
 ## 9. 다음에 이어서 할 작업
 
-1. 나머지 내부/외부 수집 대상 서버 enrollment — 8절과 동일 절차 반복 (외부 서버는 `FLEET_URL=https://139.150.84.70:8220` + `External-Servers` 정책 토큰 사용)
+1. 나머지 내부/외부 수집 대상 서버 enrollment — 8절과 동일 절차 반복 (외부 서버는 `FLEET_URL=https://139.150.84.70:8220` + `External-Servers` 정책 토큰 사용, Agent monitoring은 이미 정책에서 꺼둔 상태라 추가 조치 불필요)
 2. **30일 트라이얼 만료(2026-08-19) 전에 라이선스 처리 방안 재검토** — 구매 안 하기로 했으므로 단일 출력 구조 전환 여부 결정 필요 (내부망에서 외부 LB 공인 IP `139.150.86.188` 도달 가능 여부 확인이 선행되어야 함)
 3. 계정/권한/방화벽 정리 → `docs/07-security-hardening.md`
 4. 전체 검증 → `docs/08-runbook-verification.md`
