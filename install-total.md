@@ -145,7 +145,18 @@ sudo FLEET_URL=https://10.9.88.61:8220 \
 - **운영 계정**: 실서비스가 아니라 개별 관리자 계정(`kibana_admin` 등) 생성은 보류, 계속 `elastic` 슈퍼유저 사용하기로 결정.
 - **데이터 평면 검증**: Logstash01/02 `curl :9600/_node/stats/pipelines` 로 `in`/`out` 이벤트 카운트 증가 확인 + Kibana Discover `logs-*`에서 enroll된 4대 서버(10.9.88.12, 114.108.154.59, 114.108.154.60 등) 이벤트 실제 도착 확인 완료. Agent → Fleet Server(제어 평면) + Agent → Logstash → Elasticsearch(데이터 평면) 전체 경로 정상.
 
-## 10. 다음에 이어서 할 작업
+## 10. Apache 로그 수집 추가 (komir-repo, Internal-Servers)
+
+`komir-repo`(CentOS/RHEL, `Internal-Servers` 정책 소속)에 Apache 로그 수집 요청 — 범용 `Custom Logs` 대신 Elastic 공식 **"Apache HTTP Server" 통합** 사용 (grok 파싱 + ECS 필드 매핑 + 전용 대시보드 제공).
+
+- Fleet → Agent policies → Internal-Servers → Add integration → `Apache HTTP Server`
+- Access/Error 로그 경로를 `/var/log/httpd/access_log*`, `/var/log/httpd/error_log*`(CentOS 기본 경로)로 확인/설정
+- 메트릭 수집(`mod_status` 필요)은 로그 수집만 목적이라 비활성화
+- `Internal-Servers` 정책 공유라 `10.9.88.12`에도 같이 배포되지만, Apache 없는 서버는 대상 파일이 없어 무해함. Apache 대상 서버가 늘어나면 전용 정책 분리 고려.
+
+`elastic-agent status` HEALTHY, Kibana Discover에서 `logs-apache.access-*` 이벤트 실제 수신 확인 완료.
+
+## 11. 다음에 이어서 할 작업
 
 1. 나머지 내부/외부 수집 대상 서버 enrollment — 8절과 동일 절차 반복 (외부 서버는 `FLEET_URL=https://139.150.84.70:8220` + `External-Servers` 정책 토큰 사용, Agent monitoring은 이미 정책에서 꺼둔 상태라 추가 조치 불필요)
 2. **30일 트라이얼 만료(2026-08-19) 전에 라이선스 처리 방안 재검토** — 구매 안 하기로 했으므로 단일 출력 구조 전환 여부 결정 필요 (내부망에서 외부 LB 공인 IP `139.150.86.188` 도달 가능 여부 확인이 선행되어야 함)
