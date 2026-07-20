@@ -139,9 +139,13 @@ sudo FLEET_URL=https://10.9.88.61:8220 \
 
 - **겪은 이슈 — 외부 에이전트 모니터링 데이터 경로 없음**: `elastic-agent status`에서 `beat/metrics-monitoring` 등이 `Elasticsearch request failed: context deadline exceeded`로 계속 `DEGRADED`. 원인은 **에이전트 자체 모니터링(로그/메트릭)이 항상 `default` 출력(ES `10.9.88.2:9200`, 사설 IP)으로 가는데, 외부 에이전트는 사설 대역에 도달할 경로 자체가 없음** — Fleet Server(NAT 8220), Logstash(외부 LB 5044)와 달리 Elasticsearch는 NAT로 노출하지 않는 설계(`docs/02-certificates.md`)라서 구조적으로 해결 불가능한 경로. **Fleet → Agent policies → External-Servers → Settings → Agent monitoring(Collect agent logs/metrics) 토글을 끔**으로써 해결 — 에이전트 자기 자신에 대한 모니터링만 끄는 것이고, 실제 수집 로그 데이터(Logstash-External 경유)는 영향 없음. 정책 저장 후 대상 호스트에 반영되기까지 1~2분 정도 걸림.
 
-## 9. 다음에 이어서 할 작업
+## 9. 보안 점검 (07단계) / 전체 검증 (08단계)
+
+- **방화벽 재확인**: Elasticsearch 9200/9300이 NAT(`117.52.83.173`)로 노출 안 되고 내부 3개 노드에서만 접근 가능한지 클라우드 콘솔에서 확인 완료.
+- **운영 계정**: 실서비스가 아니라 개별 관리자 계정(`kibana_admin` 등) 생성은 보류, 계속 `elastic` 슈퍼유저 사용하기로 결정.
+- **데이터 평면 검증**: Logstash01/02 `curl :9600/_node/stats/pipelines` 로 `in`/`out` 이벤트 카운트 증가 확인 + Kibana Discover `logs-*`에서 enroll된 4대 서버(10.9.88.12, 114.108.154.59, 114.108.154.60 등) 이벤트 실제 도착 확인 완료. Agent → Fleet Server(제어 평면) + Agent → Logstash → Elasticsearch(데이터 평면) 전체 경로 정상.
+
+## 10. 다음에 이어서 할 작업
 
 1. 나머지 내부/외부 수집 대상 서버 enrollment — 8절과 동일 절차 반복 (외부 서버는 `FLEET_URL=https://139.150.84.70:8220` + `External-Servers` 정책 토큰 사용, Agent monitoring은 이미 정책에서 꺼둔 상태라 추가 조치 불필요)
 2. **30일 트라이얼 만료(2026-08-19) 전에 라이선스 처리 방안 재검토** — 구매 안 하기로 했으므로 단일 출력 구조 전환 여부 결정 필요 (내부망에서 외부 LB 공인 IP `139.150.86.188` 도달 가능 여부 확인이 선행되어야 함)
-3. 계정/권한/방화벽 정리 → `docs/07-security-hardening.md`
-4. 전체 검증 → `docs/08-runbook-verification.md`
