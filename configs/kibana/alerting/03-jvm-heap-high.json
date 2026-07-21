@@ -1,0 +1,26 @@
+{
+  "name": "metrics - jvm heap usage high",
+  "rule_type_id": ".index-threshold",
+  "consumer": "alerts",
+  "schedule": { "interval": "1m" },
+  "params": {
+    "index": ["metrics-elasticsearch.stack_monitoring.node_stats-*", "metrics-logstash.node_stats-*"],
+    "timeField": "@timestamp",
+    "aggType": "avg",
+    "aggField": "elasticsearch.node.stats.jvm.mem.heap.used.pct",
+    "groupBy": "top",
+    "termField": "host.name",
+    "termSize": 10,
+    "thresholdComparator": ">",
+    "threshold": [0.8],
+    "timeWindowSize": 10,
+    "timeWindowUnit": "m"
+  },
+  "actions": [
+    {
+      "id": "__CONNECTOR_ID__",
+      "group": "threshold met",
+      "params": { "message": "{{context.group}} 의 JVM 힙 사용률이 10분간 80%를 초과했습니다." }
+    }
+  ]
+}

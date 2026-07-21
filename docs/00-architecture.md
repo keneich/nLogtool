@@ -91,3 +91,4 @@ Fleet Server는 에이전트의 정책 배포/상태 보고/enrollment를 처리
 6. [06-agent-enrollment.md](06-agent-enrollment.md) — Elastic Agent 배포
 7. [07-security-hardening.md](07-security-hardening.md) — 계정/권한/방화벽 요약
 8. [08-runbook-verification.md](08-runbook-verification.md) — 검증 절차 및 트러블슈팅
+9. [09-alerting.md](09-alerting.md) — 장애 전조 감지 알림 (Kibana Alerting)

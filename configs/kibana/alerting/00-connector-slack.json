@@ -1,0 +1,6 @@
+{
+  "name": "ops-slack",
+  "connector_type_id": ".slack",
+  "config": {},
+  "secrets": { "webhookUrl": "__SLACK_WEBHOOK_URL__" }
+}

@@ -1,0 +1,24 @@
+{
+  "name": "logs - critical error pattern spike",
+  "rule_type_id": ".es-query",
+  "consumer": "alerts",
+  "schedule": { "interval": "1m" },
+  "params": {
+    "searchType": "esQuery",
+    "index": ["logs-*"],
+    "timeField": "@timestamp",
+    "esQuery": "{\"query\":{\"query_string\":{\"query\":\"message:(\\\"OutOfMemoryError\\\" OR \\\"Connection refused\\\" OR \\\"too many open files\\\" OR \\\"Cannot allocate memory\\\")\"}}}",
+    "size": 100,
+    "thresholdComparator": ">",
+    "threshold": [5],
+    "timeWindowSize": 5,
+    "timeWindowUnit": "m"
+  },
+  "actions": [
+    {
+      "id": "__CONNECTOR_ID__",
+      "group": "query matched",
+      "params": { "message": "최근 5분간 위험 에러 로그 {{context.hits.length}}건 발생. 대상 인덱스 logs-*." }
+    }
+  ]
+}

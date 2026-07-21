@@ -1,0 +1,26 @@
+{
+  "name": "logstash - persistent queue backlog",
+  "rule_type_id": ".index-threshold",
+  "consumer": "alerts",
+  "schedule": { "interval": "1m" },
+  "params": {
+    "index": ["metrics-logstash.node_stats-*"],
+    "timeField": "@timestamp",
+    "aggType": "max",
+    "aggField": "logstash.node.stats.pipelines.main.queue.events_count",
+    "groupBy": "top",
+    "termField": "host.name",
+    "termSize": 5,
+    "thresholdComparator": ">",
+    "threshold": [50000],
+    "timeWindowSize": 5,
+    "timeWindowUnit": "m"
+  },
+  "actions": [
+    {
+      "id": "__CONNECTOR_ID__",
+      "group": "threshold met",
+      "params": { "message": "{{context.group}} 의 Logstash 영속 큐 적체가 임계치를 초과했습니다. Elasticsearch 색인 지연 또는 유입 폭증 여부를 확인하세요." }
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "name": "logs - ingestion stopped per host",
+  "rule_type_id": ".es-query",
+  "consumer": "alerts",
+  "schedule": { "interval": "5m" },
+  "params": {
+    "searchType": "esQuery",
+    "index": ["logs-*"],
+    "timeField": "@timestamp",
+    "esQuery": "{\"query\":{\"match_all\":{}}}",
+    "size": 0,
+    "excludeHitsFromPreviousRun": false,
+    "aggType": "count",
+    "groupBy": "top",
+    "termField": "host.name",
+    "termSize": 20,
+    "thresholdComparator": "<",
+    "threshold": [1],
+    "timeWindowSize": 10,
+    "timeWindowUnit": "m"
+  },
+  "actions": [
+    {
+      "id": "__CONNECTOR_ID__",
+      "group": "query matched",
+      "params": { "message": "{{context.group}} 호스트에서 최근 10분간 로그 유입이 없습니다." }
+    }
+  ]
+}
