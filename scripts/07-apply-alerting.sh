@@ -32,9 +32,29 @@ command -v jq >/dev/null 2>&1 || { apt-get update -y && apt-get install -y jq; }
 
 CURL=(curl -sS -k --cacert "$KIBANA_CA" -u "elastic:${ELASTIC_PASSWORD}" -H 'kbn-xsrf: true' -H 'Content-Type: application/json')
 
+# HTTP 상태코드까지 확인해서, 2xx가 아니면 응답 본문(에러 메시지)을 그대로 출력하고 실패 처리한다.
+# curl은 HTTP 4xx/5xx를 받아도 exit code 0을 반환하므로 상태코드를 직접 분리해서 봐야 한다.
+call_api() {
+  local method="$1" path="$2" body="${3:-}"
+  local resp status
+  if [ -n "$body" ]; then
+    resp=$("${CURL[@]}" -w $'\n%{http_code}' -X "$method" "$KIBANA$path" -d "$body")
+  else
+    resp=$("${CURL[@]}" -w $'\n%{http_code}' -X "$method" "$KIBANA$path")
+  fi
+  status="${resp##*$'\n'}"
+  body_out="${resp%$'\n'*}"
+  if [ "$status" -lt 200 ] || [ "$status" -ge 300 ]; then
+    echo "API 호출 실패 [$method $path] (HTTP $status):" >&2
+    echo "$body_out" >&2
+    exit 1
+  fi
+  echo "$body_out"
+}
+
 echo "== [1/2] Slack Connector 확인/생성 =="
 CONNECTOR_NAME=$(jq -r '.name' "$ALERT_DIR/00-connector-slack.json")
-EXISTING_CONNECTOR_ID=$("${CURL[@]}" "$KIBANA/api/actions/connectors" \
+EXISTING_CONNECTOR_ID=$(call_api GET "/api/actions/connectors" \
   | jq -r --arg n "$CONNECTOR_NAME" '.[] | select(.name==$n) | .id' | head -n1)
 
 if [ -n "$EXISTING_CONNECTOR_ID" ]; then
@@ -42,7 +62,7 @@ if [ -n "$EXISTING_CONNECTOR_ID" ]; then
   echo "기존 커넥터 재사용: ${CONNECTOR_NAME} (${CONNECTOR_ID})"
 else
   CONNECTOR_BODY=$(jq --arg url "$SLACK_WEBHOOK_URL" '.secrets.webhookUrl = $url' "$ALERT_DIR/00-connector-slack.json")
-  CONNECTOR_ID=$("${CURL[@]}" -X POST "$KIBANA/api/actions/connector" -d "$CONNECTOR_BODY" | jq -r '.id')
+  CONNECTOR_ID=$(call_api POST "/api/actions/connector" "$CONNECTOR_BODY" | jq -r '.id')
   echo "커넥터 생성: ${CONNECTOR_NAME} (${CONNECTOR_ID})"
 fi
 
@@ -59,18 +79,19 @@ for rule_file in "${RULE_FILES[@]}"; do
   RULE_NAME=$(jq -r '.name' "$rule_file")
   RULE_BODY=$(jq --arg cid "$CONNECTOR_ID" '.actions[].id = $cid' "$rule_file")
 
-  EXISTING_RULE_ID=$("${CURL[@]}" -G "$KIBANA/api/alerting/rules/_find" \
-    --data-urlencode "search_fields=name" --data-urlencode "search=${RULE_NAME}" \
-    --data-urlencode "per_page=100" \
+  ENCODED_NAME=$(jq -rn --arg s "$RULE_NAME" '$s|@uri')
+  EXISTING_RULE_ID=$(call_api GET "/api/alerting/rules/_find?search_fields=name&search=${ENCODED_NAME}&per_page=100" \
     | jq -r --arg n "$RULE_NAME" '.data[] | select(.name==$n) | .id' | head -n1)
 
   if [ -n "$EXISTING_RULE_ID" ]; then
     echo "기존 규칙 갱신: ${RULE_NAME} (${EXISTING_RULE_ID})"
-    UPDATE_BODY=$(echo "$RULE_BODY" | jq '{name, tags: (.tags // []), schedule, params, actions, notify_when: "onActiveAlert"}')
-    "${CURL[@]}" -X PUT "$KIBANA/api/alerting/rule/${EXISTING_RULE_ID}" -d "$UPDATE_BODY" >/dev/null
+    UPDATE_BODY=$(echo "$RULE_BODY" | jq '{name, tags: (.tags // []), schedule, params, actions}')
+    call_api PUT "/api/alerting/rule/${EXISTING_RULE_ID}" "$UPDATE_BODY" >/dev/null
+    echo "  -> 갱신 완료"
   else
     echo "신규 규칙 생성: ${RULE_NAME}"
-    "${CURL[@]}" -X POST "$KIBANA/api/alerting/rule" -d "$RULE_BODY" >/dev/null
+    NEW_ID=$(call_api POST "/api/alerting/rule" "$RULE_BODY" | jq -r '.id')
+    echo "  -> 생성 완료 (id: ${NEW_ID})"
   fi
 done
 

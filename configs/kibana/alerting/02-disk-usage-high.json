@@ -21,7 +21,8 @@
     {
       "id": "__CONNECTOR_ID__",
       "group": "threshold met",
-      "params": { "message": "{{context.group}} 의 /data 디스크 사용률이 85%를 초과했습니다 (현재 {{context.value}})." }
+      "params": { "message": "{{context.group}} 의 /data 디스크 사용률이 85%를 초과했습니다 (현재 {{context.value}})." },
+      "frequency": { "notify_when": "onActionGroupChange", "throttle": null, "summary": false }
     }
   ]
 }

@@ -18,7 +18,8 @@
     {
       "id": "__CONNECTOR_ID__",
       "group": "query matched",
-      "params": { "message": "최근 5분간 위험 에러 로그 {{context.hits.length}}건 발생. 대상 인덱스 logs-*." }
+      "params": { "message": "최근 5분간 위험 에러 로그 {{context.hits.length}}건 발생. 대상 인덱스 logs-*." },
+      "frequency": { "notify_when": "onActionGroupChange", "throttle": null, "summary": false }
     }
   ]
 }

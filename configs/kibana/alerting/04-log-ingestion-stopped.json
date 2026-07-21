@@ -23,7 +23,8 @@
     {
       "id": "__CONNECTOR_ID__",
       "group": "query matched",
-      "params": { "message": "{{context.group}} 호스트에서 최근 10분간 로그 유입이 없습니다." }
+      "params": { "message": "{{context.group}} 호스트에서 최근 10분간 로그 유입이 없습니다." },
+      "frequency": { "notify_when": "onActionGroupChange", "throttle": null, "summary": false }
     }
   ]
 }

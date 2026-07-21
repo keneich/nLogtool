@@ -20,7 +20,8 @@
     {
       "id": "__CONNECTOR_ID__",
       "group": "threshold met",
-      "params": { "message": "{{context.group}} 의 JVM 힙 사용률이 10분간 80%를 초과했습니다." }
+      "params": { "message": "{{context.group}} 의 JVM 힙 사용률이 10분간 80%를 초과했습니다." },
+      "frequency": { "notify_when": "onActionGroupChange", "throttle": null, "summary": false }
     }
   ]
 }

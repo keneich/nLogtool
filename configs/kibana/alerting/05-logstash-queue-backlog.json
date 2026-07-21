@@ -20,7 +20,8 @@
     {
       "id": "__CONNECTOR_ID__",
       "group": "threshold met",
-      "params": { "message": "{{context.group}} 의 Logstash 영속 큐 적체가 임계치를 초과했습니다. Elasticsearch 색인 지연 또는 유입 폭증 여부를 확인하세요." }
+      "params": { "message": "{{context.group}} 의 Logstash 영속 큐 적체가 임계치를 초과했습니다. Elasticsearch 색인 지연 또는 유입 폭증 여부를 확인하세요." },
+      "frequency": { "notify_when": "onActionGroupChange", "throttle": null, "summary": false }
     }
   ]
 }
