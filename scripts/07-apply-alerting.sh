@@ -48,7 +48,7 @@ fi
 
 echo "== [2/2] Alerting 규칙 적용 (docs/09-alerting.md 3~7절) =="
 if [ -n "$ONLY_RULE" ]; then
-  RULE_FILES=("$ALERT_DIR"/0[1-9]-*"$ONLY_RULE"*)
+  RULE_FILES=("$ALERT_DIR"/*"$ONLY_RULE"*)
   echo "ONLY_RULE 지정됨 — 다음 파일만 적용: ${RULE_FILES[*]##*/}"
 else
   RULE_FILES=("$ALERT_DIR"/0[1-9]-*.json)
