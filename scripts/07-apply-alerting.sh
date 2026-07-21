@@ -79,8 +79,9 @@ for rule_file in "${RULE_FILES[@]}"; do
   RULE_NAME=$(jq -r '.name' "$rule_file")
   RULE_BODY=$(jq --arg cid "$CONNECTOR_ID" '.actions[].id = $cid' "$rule_file")
 
-  ENCODED_NAME=$(jq -rn --arg s "$RULE_NAME" '$s|@uri')
-  EXISTING_RULE_ID=$(call_api GET "/api/alerting/rules/_find?search_fields=name&search=${ENCODED_NAME}&per_page=100" \
+  # 이름에 '-'가 들어가면 Kibana _find의 search 파라미터가 이를 NOT 연산자로 해석해
+  # 오탐(false negative)을 낼 수 있어, search 없이 전체 목록을 받아 로컬에서 정확히 비교한다.
+  EXISTING_RULE_ID=$(call_api GET "/api/alerting/rules/_find?per_page=1000" \
     | jq -r --arg n "$RULE_NAME" '.data[] | select(.name==$n) | .id' | head -n1)
 
   if [ -n "$EXISTING_RULE_ID" ]; then
