@@ -156,7 +156,31 @@ sudo FLEET_URL=https://10.9.88.61:8220 \
 
 `elastic-agent status` HEALTHY, Kibana Discover에서 `logs-apache.access-*` 이벤트 실제 수신 확인 완료.
 
-## 11. 다음에 이어서 할 작업
+## 11. Kibana Alerting 규칙 적용 (장애 전조 감지)
+
+`logs-*`/`metrics-*`로 서버 장애 전조 증상(에러 로그 급증, 디스크/JVM 힙 사용률, 로그 유입 중단, Logstash 큐 적체)을 감지하기 위해 Kibana Alerting 규칙 5개 + Slack 커넥터 1개를 추가하고 FleetKibana에 적용 완료. 상세 설계는 [docs/09-alerting.md](docs/09-alerting.md), 정의 파일은 `configs/kibana/alerting/*.json`, 적용 스크립트는 `scripts/07-apply-alerting.sh`.
+
+```bash
+sudo ELASTIC_PASSWORD=<elastic 비밀번호> \
+     SLACK_WEBHOOK_URL=<Slack Incoming Webhook URL> \
+     ./scripts/07-apply-alerting.sh
+```
+
+**결과**: `ops-slack` 커넥터 1개 + 규칙 5개(`metrics - data disk usage high`, `logs - critical error pattern spike`, `metrics - jvm heap usage high`, `logs - ingestion stopped per host`, `logstash - persistent queue backlog`) 전부 Kibana Stack Management → Rules에 생성 확인 완료.
+
+**겪은 이슈 3건 (전부 스크립트에 반영 완료)**:
+
+1. **액션 `frequency` 필드 누락** — 규칙 생성 시 `Failed to validate actions due to the following error: Actions missing frequency parameters` 400 에러 발생. 최신 Kibana는 규칙 레벨 `notify_when` 대신 액션마다 `frequency`(`notify_when`/`throttle`/`summary`) 객체를 요구함 — 5개 JSON 파일 전부에 추가해서 해결.
+2. **API 실패가 조용히 성공으로 표시됨** — curl은 HTTP 4xx/5xx를 받아도 exit code 0이라, 스크립트가 응답 본문을 확인 안 하고 `>/dev/null`로 버리면서 실제로는 실패한 생성 요청도 "생성 완료"로 잘못 출력함(위 1번 이슈가 이 때문에 한동안 안 보였음). `call_api()` 헬퍼로 HTTP 상태코드를 직접 검사하도록 수정.
+3. **이름에 `-`가 있는 규칙이 중복 생성됨** — 재실행 시 기존 규칙 존재 여부를 Kibana `_find?search=...`로 확인했는데, 규칙 이름(`metrics - data disk usage high`)의 `-`가 검색 연산자(NOT)로 해석되어 기존 규칙을 못 찾고 똑같은 이름의 규칙을 하나 더 생성함. 커넥터 체크와 동일하게 **전체 목록을 가져와 이름을 로컬에서 정확히(exact match) 비교**하는 방식으로 수정해서 해결. (다행히 실제로 중복 생성된 채 남아있던 건 없었음 — 수동 확인 후 정리 불필요했음)
+
+- **주의**: 테스트 과정에서 elastic 비밀번호와 Slack Webhook URL을 대화창에 평문으로 여러 번 노출함 — **재발급 필요** (`elasticsearch-reset-password -u elastic --auto`, Slack 앱에서 Webhook 재발급 후 Kibana Connectors → `ops-slack`에서 URL 교체).
+- **주의**: `metrics - jvm heap usage high` 규칙은 `metrics-elasticsearch.stack_monitoring.node_stats-*`/`metrics-logstash.node_stats-*` 데이터가 있어야 실제로 동작함 — 아직 Elasticsearch/Logstash용 Stack Monitoring 통합을 Fleet 정책에 추가하지 않았다면, 규칙은 생성돼 있어도 감지가 안 되는 상태.
+
+## 12. 다음에 이어서 할 작업
 
 1. 나머지 내부/외부 수집 대상 서버 enrollment — 8절과 동일 절차 반복 (외부 서버는 `FLEET_URL=https://139.150.84.70:8220` + `External-Servers` 정책 토큰 사용, Agent monitoring은 이미 정책에서 꺼둔 상태라 추가 조치 불필요)
 2. **30일 트라이얼 만료(2026-08-19) 전에 라이선스 처리 방안 재검토** — 구매 안 하기로 했으므로 단일 출력 구조 전환 여부 결정 필요 (내부망에서 외부 LB 공인 IP `139.150.86.188` 도달 가능 여부 확인이 선행되어야 함)
+3. **elastic 비밀번호 / Slack Webhook URL 재발급** — 11절 테스트 중 노출됨
+4. **Elasticsearch/Logstash Stack Monitoring 통합 추가** — 11절의 JVM 힙 사용률 규칙이 실제로 동작하려면 필요
+5. **Alerting 규칙 임계치 튜닝** — 1~2주 관찰 후 오탐/미탐 비율 보고 `configs/kibana/alerting/*.json`의 `threshold` 값 조정
